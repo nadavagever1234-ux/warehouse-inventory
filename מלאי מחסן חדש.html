@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <title>מלאי מחסן</title>
+  <style>
+    body { font-family: Arial; direction: rtl; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f0f0f0; }
+    input, select, button { padding: 6px; margin: 4px; }
+  </style>
+</head>
+<body>
+
+<title>מלאי מחסן</title>
+
+
+<h2>הוספה / עדכון חומר</h2>
+<input id="itemName" placeholder="שם חומר" />
+<input id="location" placeholder="מיקום (מדף)" />
+<input id="qty" type="number" placeholder="כמות" />
+<select id="state">
+  <option value="חדש">חדש</option>
+  <option value="פתוח">פתוח</option>
+</select>
+<button onclick="addItem()">➕ הוסף / עדכן</button>
+
+<h2>הורדת חומר מהמלאי</h2>
+<input id="removeName" placeholder="שם חומר" />
+<input id="removeQty" type="number" placeholder="כמות להורדה" />
+<select id="removeState">
+  <option value="פתוח">פתוח</option>
+  <option value="חדש">חדש</option>
+</select>
+<button onclick="removeItem()">➖ הורד מהמלאי</button>
+
+<h2>חיפוש חומר</h2>
+<input id="search" placeholder="שם חומר" />
+<button onclick="searchItem()">🔍 חפש</button>
+<p id="result"></p>
+
+<h2>דוח מלאי</h2>
+<button onclick="printReport()">🖨️ הדפס דוח</button>
+
+<table id="table">
+  <thead>
+    <tr>
+      <th>שם חומר</th>
+      <th>מיקום</th>
+      <th>כמות חדש</th>
+      <th>כמות פתוח</th>
+      <th>סה״כ</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+let inventory = JSON.parse(localStorage.getItem('inventory') || '{}');
+
+function save() {
+  localStorage.setItem('inventory', JSON.stringify(inventory));
+}
+
+function addItem() {
+  const name = document.getElementById('itemName').value.trim();
+  const location = document.getElementById('location').value.trim();
+  const qty = Number(document.getElementById('qty').value);
+  const state = document.getElementById('state').value;
+
+  if (!name || !location || !Number.isFinite(qty) || qty <= 0) {
+    alert('נא למלא שם חומר, מיקום וכמות תקינה');
+    return;
+  }
+
+  if (!inventory[name]) {
+    inventory[name] = { location, חדש: 0, פתוח: 0 };
+  }
+
+  inventory[name].location = location;
+  inventory[name][state] += qty;
+
+  save();
+  render();
+
+  document.getElementById('itemName').value = '';
+  document.getElementById('location').value = '';
+  document.getElementById('qty').value = '';
+}
+
+function render() {
+  const tbody = document.querySelector('#table tbody');
+  tbody.innerHTML = '';
+  for (const name in inventory) {
+    const item = inventory[name];
+    const total = item['חדש'] + item['פתוח'];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${name}</td><td>${item.location}</td><td>${item['חדש']}</td><td>${item['פתוח']}</td><td>${total}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function removeItem() {
+  const name = document.getElementById('removeName').value.trim();
+  const qty = Number(document.getElementById('removeQty').value);
+  const state = document.getElementById('removeState').value;
+
+  if (!inventory[name]) {
+    alert('החומר לא קיים במלאי');
+    return;
+  }
+  if (!Number.isFinite(qty) || qty <= 0) {
+    alert('כמות לא תקינה');
+    return;
+  }
+  if (inventory[name][state] < qty) {
+    alert('אין כמות מספקת להורדה');
+    return;
+  }
+
+  inventory[name][state] -= qty;
+  save();
+  render();
+
+  document.getElementById('removeName').value = '';
+  document.getElementById('removeQty').value = '';
+}
+
+function searchItem() {
+  const q = document.getElementById('search').value.trim();
+  if (inventory[q]) {
+    const i = inventory[q];
+    document.getElementById('result').innerText = `קיים במלאי | מיקום: ${i.location} | חדש: ${i['חדש']} | פתוח: ${i['פתוח']} | סה"כ: ${i['חדש'] + i['פתוח']}`;
+  } else {
+    document.getElementById('result').innerText = 'לא נמצא במלאי';
+  }
+}
+
+function printReport() {
+  window.print();
+}
+
+render();
+</script>
+
+</body>
+</html>
